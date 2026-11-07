@@ -2,6 +2,28 @@
 
 مساعد شخصي مكتوب بـ Python، **يتعلم بنفسه** و**يصلح أعطاله بنفسه**، ويشتغل **مع أو بدون** توكن Claude.
 
+## 🖥️ تطبيق سطح المكتب
+
+![واجهة جارفيس](docs/screenshot.png)
+
+**الطريقة الأسهل:** فك ضغط `Jarvis-Desktop.zip` على سطح المكتب، ثم افتح مجلد `Jarvis` واضغط مرتين على:
+- **ويندوز:** `Start Jarvis.bat` أو `Jarvis.pyw`
+- **ماك:** `Start Jarvis.command`
+- **لينكس:** `start-jarvis.sh`
+
+هذا يحتاج Python 3.10 أو أحدث من [python.org](https://www.python.org/downloads/)، ولا يحتاج أي مكتبة إضافية.
+
+**من المستودع:** أمر واحد ينسخ كل شيء إلى `سطح المكتب/Jarvis` ويضع اختصاراً على سطح المكتب:
+```bash
+python install_desktop.py
+```
+
+كل ملفات جارفيس تكون داخل مجلد واحد على سطح المكتب: البرنامج في `jarvis/`، والذاكرة والإعدادات والنسخ الاحتياطية والسجلات ومهاراتك في `data/`. تقدر تنقل المجلد لأي مكان ويكمل شغّال.
+
+**بدون تثبيت Python:** يُبنى `Jarvis.exe` تلقائياً عبر GitHub Actions، أو يدوياً بـ `pip install pyinstaller` ثم `python build_exe.py`.
+
+## سطر الأوامر
+
 ```bash
 python -m jarvis              # محادثة
 python -m jarvis -c "كم الساعة"

@@ -2,6 +2,7 @@
 
 Personal assistant in pure Python (stdlib only). Arabic + English.
 
+- Desktop app: `jarvis/gui.py` (tkinter) via `Jarvis.pyw`; `install_desktop.py` installs to Desktop/Jarvis or builds a zip; `build_exe.py` builds a standalone app
 - Run: `python -m jarvis` · one message: `python -m jarvis -c "..."` · health: `--doctor` · repair: `--heal`
 - Test: `python -m unittest discover -s tests` (run before every commit)
 - Layout: `jarvis/core.py` (message flow) · `brains/` (claude → ollama → offline, with circuit breaker) ·

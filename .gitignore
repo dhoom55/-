@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .jarvis/
 *.db
+build/
+dist/
+*.spec
+data/
