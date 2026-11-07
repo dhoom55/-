@@ -105,6 +105,11 @@ def _coding(j, check):
 
 
 def _voice(j, info, tmp: Path):
+    try:
+        st = j.ai_setup.status()
+        info("local AI (Ollama)", True, f"installed={st['installed']} running={st['running']} models={st['models']}")
+    except Exception as exc:
+        info("local AI (Ollama)", False, str(exc)[:150])
     sp, ls = j.voice.speaker, j.voice.listener
     info("voice engines", True, f"speak={sp.engines()} listen={ls.engines()}")
     for engine in sp.engines():

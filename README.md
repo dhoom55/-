@@ -35,6 +35,25 @@ python -m unittest discover -s tests   # الاختبارات
 
 لا يحتاج أي مكتبة خارجية للتشغيل، فقط Python 3.10 أو أحدث.
 
+## 🧠 الذكاء الاصطناعي المحلي (تثبيت وتفعيل تلقائي)
+
+أول ما تفتح تطبيق سطح المكتب، إذا ما كان فيه ذكاء اصطناعي متصل، جارفيس يسوي الخطوات هذي بنفسه:
+1. يحمّل [Ollama](https://ollama.com) ويثبّته بصمت. في ويندوز يستخدم المثبّت الرسمي، وفي الماك يحطه في `~/Applications`، وفي لينكس يحطه في `~/.local` بدون صلاحيات مدير.
+2. يشغّله.
+3. يحمّل نموذج **qwen2.5** يناسب ذاكرة جهازك، وهو يعرف العربي والبرمجة:
+   - 16 جيجا رام أو أكثر: `7b` (~4.7 جيجا)
+   - 8 جيجا: `3b` (~1.9 جيجا)
+   - أقل من كذا: `1.5b`
+4. يحوّل نفسه عليه.
+
+**التقدّم:** تشوفه في المحادثة وتقدر تكمل استخدام جارفيس خلال التحميل.
+
+**الأوامر:** «فعّل الذكاء الاصطناعي» / «حالة الذكاء الاصطناعي» / «الغ التثبيت».
+
+**إصلاح ذاتي:** إذا كان Ollama مثبت لكنه متوقف، جارفيس يشغّله تلقائياً عند الفحص الذاتي.
+
+**مجرّب فعلياً:** في GitHub Actions، جارفيس يثبّت Ollama الحقيقي على Windows وmacOS وLinux، ويحمّل نموذجاً، ويجاوب منه.
+
 ## 🎤 الصوت
 
 - **في النافذة:** زر 🎤 تتكلم بدل ما تكتب، وزر 🔊 يخلي جارفيس يرد بالصوت.
@@ -169,6 +188,7 @@ Jarvis is a personal assistant in pure Python (stdlib only).
 
 - **Brains:** It tries Claude first (when the `anthropic` SDK and a key are present), then a local Ollama model, then a built-in offline brain that always works. Any brain that fails is skipped for a back-off period.
 - **Self-learning:** It learns from direct teaching, stored facts and your corrections. It also caches knowledge answers from the LLM brains so they keep working offline.
+- **Local AI auto-setup:** on first launch with no AI brain, Jarvis downloads, installs and starts Ollama on its own, pulls a qwen2.5 model sized to the machine's RAM, and switches to it. The healer restarts Ollama if it's stopped. CI verifies this end to end on real Windows, macOS and Linux.
 - **Voice:**
   - Speaking uses natural edge-tts voices when online, otherwise the system's offline voice (SAPI, `say`, or espeak).
   - Listening uses Google speech recognition (Arabic) when online, otherwise Windows' offline dictation.

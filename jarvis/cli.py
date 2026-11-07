@@ -40,6 +40,8 @@ def chat(j: Jarvis) -> None:
     print(f"\n{j.config['name']}: مرحباً {j.config['user_title']}، كيف أقدر أخدمك؟ (اكتب «مساعدة» أو help، و«خروج» للخروج)\n")
     crashes: list[float] = []
     while True:
+        for note in j.pending_notifications():
+            print(f"{j.config['name']} › {note}")
         try:
             text = input("أنت › ").strip()
         except (EOFError, KeyboardInterrupt):
@@ -53,6 +55,13 @@ def chat(j: Jarvis) -> None:
         try:
             reply = j.handle(text)
             print(f"{j.config['name']} [{reply.source}] › {reply.text}\n")
+            if reply.source == "skill:ai_control" and j.ai_setup.thread and j.ai_setup.thread.is_alive():
+                while j.ai_setup.thread.is_alive():          # show progress until the setup finishes
+                    for note in j.pending_notifications():
+                        print(f"{j.config['name']} › {note}")
+                    j.ai_setup.thread.join(1)
+                for note in j.pending_notifications():
+                    print(f"{j.config['name']} › {note}")
         except Exception as exc:  # supervisor: keep the loop alive, heal, carry on
             crashes = [t for t in crashes if time.time() - t < 60] + [time.time()]
             j.healer.record("cli", exc)

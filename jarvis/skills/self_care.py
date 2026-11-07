@@ -25,6 +25,8 @@ HELP_AR = """أقدر أساعدك في:
   • زر الميكروفون للكلام، وزر السماعة للرد بالصوت   • «فعّل الصوت» / «اسكت»   • «قل ...»   • «اختبر الصوت»
 البرمجة 👨‍💻:
   • «اكتب برنامج بايثون يحسب ...»   • «شغل الكود» (يصلح الأخطاء تلقائياً)   • «عدل الكود: ...»   • «وين الكود»
+الذكاء الاصطناعي المحلي 🧠:
+  • «فعّل الذكاء الاصطناعي» يثبّت Ollama ويشغّله تلقائياً   • «حالة الذكاء الاصطناعي»   • «الغ التثبيت»
 المستندات 📊:
   • «اعمل عرض تقديمي عن ...» (أو «... 8 شرائح»، أو «... : نقطة، نقطة»)
   • «اكتب تقرير وورد عن ...»
@@ -45,6 +47,8 @@ Voice 🎤:
   • mic button to talk, speaker button for spoken replies   • "voice on" / "mute"   • "say ..."   • "test voice"
 Coding 👨‍💻:
   • "write a python script that ..."   • "run it" (auto-fixes errors)   • "modify the code: ..."   • "show the code"
+Local AI 🧠:
+  • "setup ai" installs and starts Ollama automatically   • "ai status"   • "cancel setup"
 Documents 📊:
   • "make a presentation about ..." (or "... 8 slides", or "...: point, point")
   • "write a word document about ..."

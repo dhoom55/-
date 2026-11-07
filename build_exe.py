@@ -25,7 +25,7 @@ STDLIB_FOR_PLUGINS = [
 
 
 # Loaded lazily by skills, so list them explicitly.
-JARVIS_MODULES = ["jarvis.runner", "jarvis.coder", "jarvis.office", "jarvis.voice"]
+JARVIS_MODULES = ["jarvis.runner", "jarvis.coder", "jarvis.office", "jarvis.voice", "jarvis.ai_setup"]
 # python-pptx / python-docx (PowerPoint, Word), edge_tts (natural voices),
 # speech_recognition + pyaudio (microphone).
 OPTIONAL_PACKAGES = ["pptx", "docx", "edge_tts", "speech_recognition", "pyaudio"]

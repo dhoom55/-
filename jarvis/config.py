@@ -23,7 +23,9 @@ DEFAULTS: dict = {
     "claude_effort": "medium",     # low | medium | high | xhigh | max
     "claude_max_tokens": 16000,
     "ollama_url": "http://localhost:11434",
-    "ollama_model": "llama3.2",
+    "ollama_model": "qwen2.5:3b",
+    "auto_setup_ai": True,         # desktop app: install + start Ollama by itself when no AI brain exists
+    "ai_setup_attempted": 0,       # time of the last automatic attempt (retried after a day)
     # Self-learning
     "learn_from_llm": True,        # cache LLM answers so they work offline later
     "recall_threshold": 0.82,      # how close a question must be to a learned one

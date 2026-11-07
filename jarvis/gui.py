@@ -281,6 +281,7 @@ class JarvisApp:
                     self._update_voice_button()
                     self._speak_reply(greeting)
                     self._busy(False)
+                    threading.Thread(target=self._auto_setup_ai, daemon=True).start()
                 elif kind == "reply":
                     self.write("jarvis", value.text, value.source)
                     self._update_voice_button()
@@ -306,7 +307,28 @@ class JarvisApp:
                     self.status.configure(fg=BAD)
         except queue.Empty:
             pass
+        if self.jarvis:   # news from background work (e.g. installing the local AI)
+            for note in self.jarvis.pending_notifications():
+                self.write("jarvis", note, "setup")
+                if note.startswith(("✅", "❌")):
+                    self._speak_reply(note.split("\n")[0])
+                    self._refresh_brains()
         self.root.after(100, self._poll)
+
+    def _auto_setup_ai(self):
+        """First launch without any AI brain: install and start Ollama automatically (once a day at most)."""
+        j = self.jarvis
+        if not j.config["auto_setup_ai"] or j.has_ai():
+            return
+        if time.time() - float(j.config["ai_setup_attempted"] or 0) < 24 * 3600:
+            return
+        j.config.set("ai_setup_attempted", time.time())
+        if j.ai_setup.exe():
+            j.notify("🔧 Ollama موجود لكنه متوقف، أشغّله…")
+        else:
+            j.notify("🧠 ما فيه ذكاء اصطناعي متصل، فبدأت أثبت لك Ollama (مجاني ويشتغل على جهازك بدون إنترنت). "
+                     "التحميل من 1 إلى 5 جيجا حسب جهازك. تقدر تستخدمني عادي خلال التثبيت، ولإيقافه قل «الغ التثبيت».")
+        j.ai_setup.start()
 
     def _busy(self, on):
         self.reactor.busy = on

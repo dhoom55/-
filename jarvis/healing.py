@@ -307,8 +307,27 @@ class SelfHealer:
 
         for name, status in self.j.router.status():
             ok = status.startswith("ready")
+            if name == "ollama" and not ok and self._ollama_installed():
+                # installed but stopped: something the healer can fix by starting it
+                checks.append(Check("brain ollama", False, "installed but not running", "start_ollama", warn=True))
+                continue
             checks.append(Check(f"brain {name}", True, status, warn=not ok))
         return checks
+
+    def _ollama_installed(self) -> bool:
+        try:
+            return bool(self.j.ai_setup.exe())
+        except Exception:
+            return False
+
+    def _fix_start_ollama(self, component, exc, context):
+        setup = self.j.ai_setup
+        if setup.start_server(wait=20):
+            brain = self.j.router.get("ollama")
+            if brain:
+                brain._checked_at = 0
+            return True, "started the local AI (Ollama) server"
+        return False, "Ollama is installed but would not start"
 
     def heal_all(self) -> list[str]:
         notes = []

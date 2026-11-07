@@ -9,6 +9,7 @@ Any crash along the way is caught, recorded and handed to the self-healer.
 """
 from __future__ import annotations
 
+import queue
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,6 +47,8 @@ class Jarvis:
         self.skills = SkillManager(self)
         self.learner = Learner(self)
         self._voice = None
+        self._ai_setup = None
+        self.notifications: "queue.Queue[str]" = queue.Queue()   # background news for the UI
         self.startup_notes = self.healer.startup()
 
     # ---- language helpers ------------------------------------------------
@@ -137,6 +140,29 @@ class Jarvis:
         else:
             history.append({"role": "user", "content": text})
         return history
+
+    def notify(self, text: str) -> None:
+        """Message from background work (e.g. installing the local AI); the app shows it when it can."""
+        self.notifications.put(text)
+
+    def pending_notifications(self) -> list[str]:
+        out = []
+        while True:
+            try:
+                out.append(self.notifications.get_nowait())
+            except queue.Empty:
+                return out
+
+    def has_ai(self) -> bool:
+        return any(b.is_llm and b.available() for b in self.router.brains)
+
+    @property
+    def ai_setup(self):
+        """Installer/activator for the free local AI brain (Ollama)."""
+        if self._ai_setup is None:
+            from .ai_setup import OllamaSetup
+            self._ai_setup = OllamaSetup(self)
+        return self._ai_setup
 
     @property
     def voice(self):

@@ -61,6 +61,23 @@ jobs:
           name: Jarvis-${{ runner.os }}
           path: Jarvis-${{ runner.os }}.zip
 
+  local-ai:
+    # Real end-to-end: Jarvis installs Ollama by itself, downloads a model and answers with it.
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install python-pptx python-docx
+      - run: python tests/e2e_ollama.py qwen2.5:0.5b
+
   release:
     # Every merge to main publishes downloadable files under "Releases".
     if: github.ref == 'refs/heads/main'
