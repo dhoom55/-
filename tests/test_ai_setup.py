@@ -1,6 +1,7 @@
 """Installing and activating the local AI (Ollama), with a fake Ollama and a local download server."""
 import functools
 import io
+import json
 import os
 import shutil
 import socket
@@ -71,6 +72,49 @@ class OllamaSetupTests(unittest.TestCase):
         self.addCleanup(server.shutdown)
         url = f"http://127.0.0.1:{server.server_address[1]}/ollama.tgz"
         return mock.patch.dict(ai_setup.URLS, {"linux-amd64": url, "linux-arm64": url})
+
+    def serve_renamed(self, fmt: str):
+        """'ollama.com' answers 404 for the old name; a fake GitHub API points to the new file."""
+        site = self.tmp / "site2"
+        site.mkdir()
+        launcher = f"#!/bin/sh\nexec {sys.executable} {FAKE} \"$@\"\n".encode()
+        tar_path = site / "ollama.tar"
+        with tarfile.open(tar_path, "w") as t:
+            info = tarfile.TarInfo("bin/ollama")
+            info.size, info.mode = len(launcher), 0o755
+            t.addfile(info, io.BytesIO(launcher))
+        if fmt == "zst":
+            subprocess.run(["zstd", "-q", "-f", str(tar_path), "-o", str(site / "ollama-linux-amd64.tar.zst")], check=True)
+            name = "ollama-linux-amd64.tar.zst"
+        else:
+            import gzip
+            (site / "ollama-linux-amd64.tgz").write_bytes(gzip.compress(tar_path.read_bytes()))
+            name = "ollama-linux-amd64.tgz"
+        handler = functools.partial(SimpleHTTPRequestHandler, directory=str(site))
+        handler.log_message = lambda *a: None
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        (site / "latest.json").write_text(json.dumps({"assets": [
+            {"name": "ollama-linux-amd64-rocm.tar.zst", "browser_download_url": base + "/nope"},
+            {"name": name, "browser_download_url": f"{base}/{name}"}]}))
+        return mock.patch.multiple(ai_setup, URLS={"linux-amd64": base + "/old.tgz", "linux-arm64": base + "/old.tgz"},
+                                   RELEASES_API=base + "/latest.json")
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux installer path")
+    def test_renamed_download_is_found_via_release_list(self):
+        j = self.jarvis()
+        with self.serve_renamed("tgz"), mock.patch("platform.machine", return_value="x86_64"):
+            j.ai_setup.install()
+        self.assertTrue(j.ai_setup.exe())
+
+    @unittest.skipUnless(sys.platform.startswith("linux") and shutil.which("zstd"), "needs zstd")
+    def test_zstd_archive(self):
+        j = self.jarvis()
+        with self.serve_renamed("zst"), mock.patch("platform.machine", return_value="x86_64"):
+            j.ai_setup.install()
+        self.assertTrue(j.ai_setup.start_server())
 
     def test_pick_model_by_memory_and_disk(self):
         self.assertEqual(pick_model(32, 100), "qwen2.5:7b")

@@ -13,6 +13,7 @@ import sys
 import time
 
 from .core import Jarvis
+from .text import utf8_console
 
 EXIT = {"exit", "quit", "bye jarvis", "خروج", "اطلع", "سكر", "مع السلامة جارفيس"}
 BANNER = r"""
@@ -107,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--say", metavar="TEXT", help="speak a sentence aloud")
     p.add_argument("--home", help="data folder (default ~/.jarvis or $JARVIS_HOME)")
     args = p.parse_args(argv)
+    utf8_console()
 
     j = Jarvis(home=args.home)
     try:

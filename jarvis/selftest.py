@@ -15,6 +15,8 @@ from pathlib import Path
 
 
 def run(report_dir: Path) -> int:
+    from jarvis.text import utf8_console
+    utf8_console()
     lines, failed = [], 0
 
     def check(name, ok, detail=""):

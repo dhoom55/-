@@ -23,6 +23,7 @@ import tarfile
 import tempfile
 import threading
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -35,6 +36,7 @@ URLS = {
     "linux-amd64": "https://ollama.com/download/ollama-linux-amd64.tgz",
     "linux-arm64": "https://ollama.com/download/ollama-linux-arm64.tgz",
 }
+RELEASES_API = "https://api.github.com/repos/ollama/ollama/releases/latest"
 # (minimum RAM in GB, model, approximate download in GB)
 MODELS = [(15, "qwen2.5:7b", 4.7), (7, "qwen2.5:3b", 1.9), (0, "qwen2.5:1.5b", 1.0)]
 MODEL_SIZES = {"qwen2.5:7b": 4.7, "qwen2.5:3b": 1.9, "qwen2.5:1.5b": 1.0, "qwen2.5:0.5b": 0.4}
@@ -79,6 +81,12 @@ class OllamaSetup:
         self.j = jarvis
         self.url = (url or (jarvis.config["ollama_url"] if jarvis else "http://localhost:11434")).rstrip("/")
         self.notify = notify or (jarvis.notify if jarvis else print)
+
+    def _say(self, text: str) -> None:
+        try:
+            self.notify(text)
+        except Exception:   # a display problem must never stop the installation
+            pass
         self.thread: threading.Thread | None = None
         self.cancel = threading.Event()
         self.stage = "idle"          # idle | installing | starting | downloading | done | failed | cancelled
@@ -165,7 +173,7 @@ class OllamaSetup:
                 self.progress = f"{label}: {done / 1e6:.0f}/{total / 1e6:.0f} MB" if total else f"{label}: {done / 1e6:.0f} MB"
                 if total and pct >= last + 10:
                     last = pct - pct % 10
-                    self.notify(f"⬇️ {label} {last}%")
+                    self._say(f"⬇️ {label} {last}%")
         return dest
 
     def install(self) -> Path:
@@ -182,17 +190,57 @@ class OllamaSetup:
             subprocess.run(["ditto", "-x", "-k", str(archive), str(apps)], check=True, timeout=600)
         else:
             arch = "arm64" if platform.machine().lower() in ("aarch64", "arm64") else "amd64"
-            archive = self._download(URLS[f"linux-{arch}"], tmp / "ollama.tgz", "Ollama")
+            try:
+                archive = self._download(URLS[f"linux-{arch}"], tmp / "ollama.tgz", "Ollama")
+            except urllib.error.HTTPError as exc:
+                if exc.code != 404:
+                    raise
+                url = self._linux_asset(arch)       # the file was renamed: ask GitHub for the current one
+                archive = self._download(url, tmp / url.rsplit("/", 1)[-1], "Ollama")
             target = self.home_dir()
             target.mkdir(parents=True, exist_ok=True)
-            with tarfile.open(archive) as t:
-                t.extractall(target, filter="data") if hasattr(tarfile, "data_filter") else t.extractall(target)
+            self._extract(archive, target)
             (target / "bin" / "ollama").chmod(0o755)
         shutil.rmtree(tmp, ignore_errors=True)
         exe = self.exe()
         if not exe:
             raise RuntimeError("Ollama was installed but its program was not found")
         return exe
+
+    @staticmethod
+    def _linux_asset(arch: str) -> str:
+        """URL of the plain Linux build in Ollama's latest GitHub release (.tgz or .tar.zst)."""
+        req = urllib.request.Request(RELEASES_API, headers={"User-Agent": "Jarvis-assistant",
+                                                            "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            assets = json.loads(r.read().decode("utf-8")).get("assets", [])
+        names = {a["name"]: a["browser_download_url"] for a in assets}
+        for ext in (".tgz", ".tar.zst", ".tar.gz"):
+            name = f"ollama-linux-{arch}{ext}"
+            if name in names:
+                return names[name]
+        raise RuntimeError(f"no Linux {arch} build in the latest Ollama release: {sorted(names)[:12]}")
+
+    @staticmethod
+    def _extract(archive: Path, target: Path) -> None:
+        if archive.name.endswith(".zst"):
+            try:
+                from compression import zstd   # Python 3.14+
+                with zstd.open(archive) as raw, tarfile.open(fileobj=raw, mode="r|") as t:
+                    t.extractall(target, filter="data")
+                return
+            except ImportError:
+                pass
+            if not shutil.which("zstd") and not shutil.which("unzstd"):
+                raise RuntimeError("this Ollama build is .tar.zst - install zstd (e.g. sudo apt install zstd)")
+            subprocess.run(["tar", "--use-compress-program=unzstd" if shutil.which("unzstd") else "--zstd",
+                            "-xf", str(archive), "-C", str(target)], check=True, timeout=900)
+            return
+        with tarfile.open(archive) as t:
+            if hasattr(tarfile, "data_filter"):
+                t.extractall(target, filter="data")
+            else:
+                t.extractall(target)
 
     # ---- model ---------------------------------------------------------------
     def pull(self, model: str) -> None:
@@ -214,7 +262,7 @@ class OllamaSetup:
                     self.progress = f"{model}: {done / 1e9:.2f}/{total / 1e9:.2f} GB"
                     if total > 50e6 and pct >= last + 10:
                         last = pct - pct % 10
-                        self.notify(f"🧠 {model} {last}%")
+                        self._say(f"🧠 {model} {last}%")
                 elif msg.get("status"):
                     self.progress = f"{model}: {msg['status']}"
         if model not in self.models() and f"{model}:latest" not in self.models():
@@ -226,9 +274,9 @@ class OllamaSetup:
         try:
             if not self.exe():
                 self.stage = "installing"
-                self.notify("⬇️ أنزّل Ollama وأثبته… / Downloading and installing Ollama…")
+                self._say("⬇️ أنزّل Ollama وأثبته… / Downloading and installing Ollama…")
                 self.install()
-                self.notify("✅ تم تثبيت Ollama / Ollama installed")
+                self._say("✅ تم تثبيت Ollama / Ollama installed")
             self.stage = "starting"
             if not self.start_server():
                 raise RuntimeError("Ollama is installed but its server did not start")
@@ -242,7 +290,7 @@ class OllamaSetup:
             if not any(m == model or m == f"{model}:latest" for m in have):
                 self.stage = "downloading"
                 size = MODEL_SIZES.get(model)
-                self.notify(f"🧠 أنزّل نموذج الذكاء {model}" + (f" (~{size} GB)" if size else "") + " …")
+                self._say(f"🧠 أنزّل نموذج الذكاء {model}" + (f" (~{size} GB)" if size else "") + " …")
                 self.pull(model)
             if self.j:
                 self.j.config.set("ollama_model", model)
@@ -251,18 +299,18 @@ class OllamaSetup:
                     brain.model, brain._checked_at = model, 0
                 self.j.router.reset()
             self.stage, self.progress = "done", ""
-            self.notify(f"✅ الذكاء الاصطناعي المحلي جاهز ({model}). الحين أقدر أبرمج وأكتب العروض والمستندات بدون إنترنت.\n"
+            self._say(f"✅ الذكاء الاصطناعي المحلي جاهز ({model}). الحين أقدر أبرمج وأكتب العروض والمستندات بدون إنترنت.\n"
                         f"✅ Local AI is ready ({model}).")
             return model
         except SetupCancelled:
             self.stage = "cancelled"
-            self.notify("⏹️ أوقفت التثبيت. / Setup cancelled.")
+            self._say("⏹️ أوقفت التثبيت. / Setup cancelled.")
             raise
         except Exception as exc:
             self.stage, self.error = "failed", f"{type(exc).__name__}: {exc}"
             if self.j:
                 self.j.healer.record("ai_setup", exc)
-            self.notify(f"❌ ما قدرت أكمل تثبيت الذكاء الاصطناعي: {exc}\nأعد المحاولة بقول «فعّل الذكاء الاصطناعي».")
+            self._say(f"❌ ما قدرت أكمل تثبيت الذكاء الاصطناعي: {exc}\nأعد المحاولة بقول «فعّل الذكاء الاصطناعي».")
             raise
 
     def start(self, model: str | None = None) -> bool:
@@ -290,6 +338,8 @@ def main(argv=None) -> int:
     ap.add_argument("--home", help="Jarvis data folder")
     args = ap.parse_args(argv)
     from .core import Jarvis
+    from .text import utf8_console
+    utf8_console()
     j = Jarvis(home=args.home)
     s = OllamaSetup(j, notify=lambda m: print(m, flush=True))
     if args.status:

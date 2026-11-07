@@ -12,6 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from jarvis import Jarvis  # noqa: E402
+from jarvis.text import utf8_console  # noqa: E402
+
+utf8_console()
 
 
 def main(model: str) -> int:

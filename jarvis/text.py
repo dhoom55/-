@@ -53,3 +53,13 @@ def similarity(a: str, b: str) -> float:
     ka, kb = keywords(a), keywords(b)
     jac = len(ka & kb) / len(ka | kb) if (ka or kb) else 0.0
     return 0.55 * char + 0.45 * jac
+
+
+def utf8_console() -> None:
+    """Make print() safe for Arabic/emoji on any console (Windows pipes default to cp1252)."""
+    import sys
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
