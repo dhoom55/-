@@ -23,7 +23,9 @@ DEFAULTS: dict = {
     "claude_effort": "medium",     # low | medium | high | xhigh | max
     "claude_max_tokens": 16000,
     "ollama_url": "http://localhost:11434",
-    "ollama_model": "llama3.2",
+    "ollama_model": "qwen2.5:3b",
+    "auto_setup_ai": True,         # desktop app: install + start Ollama by itself when no AI brain exists
+    "ai_setup_attempted": 0,       # time of the last automatic attempt (retried after a day)
     # Self-learning
     "learn_from_llm": True,        # cache LLM answers so they work offline later
     "recall_threshold": 0.82,      # how close a question must be to a learned one
@@ -33,6 +35,18 @@ DEFAULTS: dict = {
     "allow_code_repair": True,     # let an LLM brain rewrite a crashing skill (backed up + tested)
     "quarantine_after": 3,         # disable a skill after this many crashes
     "backups_to_keep": 5,
+    # Voice
+    "speak_replies": False,        # read every reply aloud
+    "voice_online": True,          # use natural online voices (edge-tts) when the internet is up
+    "listen_language": "ar",       # ar | en  - language for the microphone
+    "tts_voice_ar": "ar-SA-HamedNeural",
+    "tts_voice_en": "en-GB-RyanNeural",
+    "listen_seconds": 8,
+    # Files Jarvis creates (documents, presentations, code)
+    "outputs_dir": "",             # empty = <data folder>/outputs (or JARVIS_OUTPUTS)
+    "open_created_files": True,    # open a new document/presentation automatically
+    "code_timeout": 30,            # seconds a program may run
+    "code_fix_attempts": 3,        # how many times Jarvis may auto-fix a failing program
 }
 
 
@@ -61,6 +75,13 @@ class Config:
     @property
     def logs(self) -> Path:
         return self.home / "logs"
+
+    @property
+    def outputs(self) -> Path:
+        custom = os.environ.get("JARVIS_OUTPUTS") or self.values.get("outputs_dir")
+        path = Path(custom).expanduser() if custom else self.home / "outputs"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     def ensure_dirs(self) -> None:
         for p in (self.home, self.backups, self.backups / "code", self.plugins, self.logs):

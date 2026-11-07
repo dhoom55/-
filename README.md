@@ -35,6 +35,64 @@ python -m unittest discover -s tests   # الاختبارات
 
 لا يحتاج أي مكتبة خارجية للتشغيل، فقط Python 3.10 أو أحدث.
 
+## 🧠 الذكاء الاصطناعي المحلي (تثبيت وتفعيل تلقائي)
+
+أول ما تفتح تطبيق سطح المكتب، إذا ما كان فيه ذكاء اصطناعي متصل، جارفيس يسوي الخطوات هذي بنفسه:
+1. يحمّل [Ollama](https://ollama.com) ويثبّته بصمت. في ويندوز يستخدم المثبّت الرسمي، وفي الماك يحطه في `~/Applications`، وفي لينكس يحطه في `~/.local` بدون صلاحيات مدير.
+2. يشغّله.
+3. يحمّل نموذج **qwen2.5** يناسب ذاكرة جهازك، وهو يعرف العربي والبرمجة:
+   - 16 جيجا رام أو أكثر: `7b` (~4.7 جيجا)
+   - 8 جيجا: `3b` (~1.9 جيجا)
+   - أقل من كذا: `1.5b`
+4. يحوّل نفسه عليه.
+
+**التقدّم:** تشوفه في المحادثة وتقدر تكمل استخدام جارفيس خلال التحميل.
+
+**الأوامر:** «فعّل الذكاء الاصطناعي» / «حالة الذكاء الاصطناعي» / «الغ التثبيت».
+
+**إصلاح ذاتي:** إذا كان Ollama مثبت لكنه متوقف، جارفيس يشغّله تلقائياً عند الفحص الذاتي.
+
+**مجرّب فعلياً:** في GitHub Actions، جارفيس يثبّت Ollama الحقيقي على Windows وmacOS وLinux، ويحمّل نموذجاً، ويجاوب منه.
+
+## 🎤 الصوت
+
+- **في النافذة:** زر 🎤 تتكلم بدل ما تكتب، وزر 🔊 يخلي جارفيس يرد بالصوت.
+- **بالأوامر:** «فعّل الصوت» / «اسكت» / «قل ...» / «اختبر الصوت».
+- **من سطر الأوامر:** `python -m jarvis --voice` محادثة كاملة بالصوت، و`--say "نص"` ينطق جملة.
+
+| | يجرّب أولاً | وإذا ما نفع |
+|---|---|---|
+| **النطق** | أصوات طبيعية بالعربي والإنجليزي (edge-tts، يحتاج إنترنت) | صوت الجهاز نفسه بدون إنترنت: Windows SAPI أو `say` في الماك أو espeak في لينكس |
+| **الاستماع** | Google (يدعم العربي، يحتاج إنترنت) | التعرّف المحلي في ويندوز (إنجليزي) |
+
+إذا فشل محرك صوت، جارفيس ينتقل للي بعده ويوقف المحرك المتعطل 5 دقائق.
+
+## 👨‍💻 البرمجة
+
+| قل | يصير |
+|---|---|
+| `اكتب برنامج بايثون يحسب معدل الطلاب` | يكتب البرنامج ويحفظه في مجلد خاص |
+| `شغل الكود` | يشغّله. إذا طلع خطأ يرسله للذكاء الاصطناعي ويصلحه ويعيد التشغيل، حتى 3 مرات |
+| `عدل الكود: خله يحفظ النتيجة في ملف` | يعدّل المشروع الحالي |
+| `وين الكود` | يفتح المجلد ويعرض الملفات |
+
+- **حدود التشغيل:** كل برنامج له حد زمني 30 ثانية. البرامج اللي لها نافذة تنفتح بشكل مستقل.
+- **النسخ القديمة:** تنحفظ في مجلد `.history`.
+- **ملاحظة:** كتابة الكود وإصلاحه تحتاج عقل ذكاء اصطناعي. الأسهل والمجاني [Ollama](https://ollama.com)، بعد تثبيته اكتب `ollama pull qwen2.5-coder`. أما التشغيل نفسه فيشتغل بدون إنترنت.
+
+## 📊 العروض التقديمية والوورد
+
+| قل | يصير |
+|---|---|
+| `اعمل عرض تقديمي عن الطاقة الشمسية` | عرض PowerPoint بتصميم جاهز: شريحة عنوان، وشرائح محتوى، وشريحة ختام |
+| `سوي بوربوينت عن مشروعي 8 شرائح` | يحدد عدد الشرائح |
+| `اعمل عرض عن مشروعي: الفكرة، السوق، الميزانية` | شريحة لكل نقطة تعطيه إياها |
+| `اكتب تقرير وورد عن السلامة في المصانع` | مستند Word بعنوان وأقسام وفقرات |
+
+- **العربي:** يُكتب من اليمين لليسار بشكل صحيح في PowerPoint وWord.
+- **مكان الملفات:** في مجلد `ملفات جارفيس` داخل مجلد جارفيس على سطح المكتب، ويفتح الملف تلقائياً.
+- **من يكتب المحتوى:** إذا كان Claude أو Ollama متصل، هو يكتبه. إذا ما كان متصل، يجهّز لك هيكل جاهز تعبّيه، أو يبنيه من النقاط اللي تعطيه.
+
 ## العقول: لا يعتمد على توكن Claude
 
 يجرّب جارفيس العقول بالترتيب، وإذا فشل واحد ينتقل للي بعده تلقائياً:
@@ -103,6 +161,8 @@ def handle(text, match, jarvis):
 - `backups/`: النسخ الاحتياطية
 - `logs/errors.log`: سجل الأعطال
 
+والملفات اللي يسويها لك (العروض، والمستندات، والأكواد) تنحفظ في `ملفات جارفيس/` بجانب `data/` في تطبيق سطح المكتب، أو في `~/.jarvis/outputs/` من سطر الأوامر.
+
 ## مهارات Claude Code المحمّلة من GitHub
 
 في `.claude/skills/` مهارات تساعد Claude Code لما يطوّر جارفيس معك:
@@ -128,6 +188,13 @@ Jarvis is a personal assistant in pure Python (stdlib only).
 
 - **Brains:** It tries Claude first (when the `anthropic` SDK and a key are present), then a local Ollama model, then a built-in offline brain that always works. Any brain that fails is skipped for a back-off period.
 - **Self-learning:** It learns from direct teaching, stored facts and your corrections. It also caches knowledge answers from the LLM brains so they keep working offline.
+- **Local AI auto-setup:** on first launch with no AI brain, Jarvis downloads, installs and starts Ollama on its own, pulls a qwen2.5 model sized to the machine's RAM, and switches to it. The healer restarts Ollama if it's stopped. CI verifies this end to end on real Windows, macOS and Linux.
+- **Voice:**
+  - Speaking uses natural edge-tts voices when online, otherwise the system's offline voice (SAPI, `say`, or espeak).
+  - Listening uses Google speech recognition (Arabic) when online, otherwise Windows' offline dictation.
+  - The desktop window has 🎤 and 🔊 buttons, and `python -m jarvis --voice` runs a hands-free conversation.
+- **Coding:** Jarvis writes programs, runs them with a time limit (also from inside `Jarvis.exe`), and auto-fixes errors with the AI brain, keeping the old versions.
+- **Documents:** Jarvis makes PowerPoint and Word files, with proper Arabic right-to-left layout and XML elements in schema order.
 - **Self-repair:**
   - Restores corrupted memory from backups.
   - Resets a broken config.

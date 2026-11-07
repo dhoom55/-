@@ -30,18 +30,35 @@ IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "_candidate_*")
 
 BAT = r"""@echo off
 cd /d "%~dp0"
+set PY=
+where py >nul 2>nul && set PY=py -3
+if not defined PY where python >nul 2>nul && set PY=python
+if not defined PY (
+  echo Python was not found. Install it from python.org ^(tick "Add python.exe to PATH"^), then run this again.
+  start "" https://www.python.org/downloads/
+  pause
+  exit /b
+)
+if not exist "data\.features_installed" (
+  echo First run: installing voice, PowerPoint and Word support...
+  %PY% -m pip install --user -q -r requirements-optional.txt && (if not exist data mkdir data) && echo ok> "data\.features_installed"
+)
 where pythonw >nul 2>nul && (start "" pythonw "Jarvis.pyw" & exit /b)
-where py >nul 2>nul && (start "" py -3w "Jarvis.pyw" & exit /b)
-echo Python was not found. Install it from python.org (tick "Add python.exe to PATH"), then run this again.
-start "" https://www.python.org/downloads/
-pause
+start "" %PY%w "Jarvis.pyw"
 """
 COMMAND = """#!/bin/bash
 cd "$(dirname "$0")"
+if [ ! -f data/.features_installed ]; then
+  echo "First run: installing voice, PowerPoint and Word support..."
+  python3 -m pip install --user -q -r requirements-optional.txt && mkdir -p data && touch data/.features_installed
+fi
 exec python3 Jarvis.pyw
 """
 SH = """#!/bin/sh
 cd "$(dirname "$0")"
+if [ ! -f data/.features_installed ]; then
+  python3 -m pip install --user -q -r requirements-optional.txt && mkdir -p data && touch data/.features_installed
+fi
 exec python3 Jarvis.pyw
 """
 LAUNCHERS = {"Start Jarvis.bat": BAT, "Start Jarvis.command": COMMAND, "start-jarvis.sh": SH}
