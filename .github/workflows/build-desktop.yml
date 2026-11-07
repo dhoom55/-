@@ -1,0 +1,77 @@
+name: Build desktop app
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s tests -v
+      - name: Package for computers that have Python
+        run: python install_desktop.py --zip Jarvis-Desktop-Python.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Jarvis-Desktop-Python
+          path: Jarvis-Desktop-Python.zip
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyinstaller
+      - run: python build_exe.py
+      - name: Self-test the built app (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist/Jarvis/Jarvis.exe -ArgumentList '--selftest' -Wait -PassThru
+          Get-Content dist/Jarvis/selftest.txt
+          if ($p.ExitCode -ne 0) { exit 1 }
+          Remove-Item dist/Jarvis/selftest.txt
+      - name: Self-test the built app (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          dist/Jarvis/Jarvis --selftest || (cat dist/Jarvis/selftest.txt; exit 1)
+          cat dist/Jarvis/selftest.txt && rm dist/Jarvis/selftest.txt
+      - name: Zip
+        run: python -c "import shutil; shutil.make_archive('Jarvis-${{ runner.os }}', 'zip', 'dist', 'Jarvis')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Jarvis-${{ runner.os }}
+          path: Jarvis-${{ runner.os }}.zip
+
+  release:
+    # Every merge to main publishes downloadable files under "Releases".
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v0.${{ github.run_number }}" --repo "${{ github.repository }}" \
+            --title "Jarvis v0.${{ github.run_number }}" --latest \
+            --notes "Windows: download Jarvis-Windows.zip, extract it to your Desktop, run Jarvis\Jarvis.exe (no Python needed).
+          macOS: Jarvis-macOS.zip, extract, right-click Jarvis > Open the first time (the app is not signed).
+          Any computer with Python 3.10+: Jarvis-Desktop-Python.zip, extract to the Desktop, double-click Start Jarvis." \
+            Jarvis-Windows.zip Jarvis-macOS.zip Jarvis-Desktop-Python.zip
