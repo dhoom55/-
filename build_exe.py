@@ -26,7 +26,7 @@ STDLIB_FOR_PLUGINS = [
 def main() -> int:
     args = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--windowed", "--onedir", "--name", "Jarvis",
             "--add-data", f"{HERE / 'jarvis' / 'skills'}{os.pathsep}jarvis/skills",
-            "--hidden-import", "jarvis.gui"]
+            "--hidden-import", "jarvis.gui", "--hidden-import", "jarvis.selftest"]
     for mod in STDLIB_FOR_PLUGINS:
         args += ["--hidden-import", mod]
     args += sys.argv[1:] + [str(HERE / "Jarvis.pyw")]

@@ -13,12 +13,19 @@ HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__
 sys.path.insert(0, str(HERE))
 os.environ.setdefault("JARVIS_HOME", str(HERE / "data"))
 
+if "--selftest" in sys.argv:
+    from jarvis.selftest import run
+    raise SystemExit(run(HERE))
+
 try:
     from jarvis.gui import main
 except ImportError as exc:  # most often: Python installed without tkinter
     print("Jarvis needs Python with tkinter (the standard installer from python.org includes it).")
     print(exc)
-    input("Press Enter to close...")
+    try:
+        input("Press Enter to close...")
+    except (EOFError, RuntimeError):
+        pass
     raise SystemExit(1)
 
 main()
