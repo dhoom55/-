@@ -1,0 +1,97 @@
+"""Command line interface.
+
+    python -m jarvis                  # chat
+    python -m jarvis -c "كم الساعة"   # one message
+    python -m jarvis --doctor         # health report
+    python -m jarvis --heal           # repair everything that can be repaired
+    python -m jarvis --rollback       # undo code repairs made by the healer
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+import time
+
+from .core import Jarvis
+
+EXIT = {"exit", "quit", "bye jarvis", "خروج", "اطلع", "سكر", "مع السلامة جارفيس"}
+BANNER = r"""
+     ██╗ █████╗ ██████╗ ██╗   ██╗██╗███████╗
+     ██║██╔══██╗██╔══██╗██║   ██║██║██╔════╝
+     ██║███████║██████╔╝██║   ██║██║███████╗
+██   ██║██╔══██║██╔══██╗╚██╗ ██╔╝██║╚════██║
+╚█████╔╝██║  ██║██║  ██║ ╚████╔╝ ██║███████║
+ ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚══════╝
+"""
+
+
+def _print_checks(j: Jarvis) -> None:
+    for c in j.healer.health_check():
+        mark = "OK  " if c.ok and not c.warn else ("WARN" if c.ok or c.warn else "FAIL")
+        print(f"  [{mark}] {c.name}: {c.detail}")
+
+
+def chat(j: Jarvis) -> None:
+    print(BANNER)
+    for name, status in j.router.status():
+        print(f"  brain {name}: {status}")
+    for note in j.startup_notes:
+        print(f"  🔧 {note}")
+    print(f"\n{j.config['name']}: مرحباً {j.config['user_title']}، كيف أقدر أخدمك؟ (اكتب «مساعدة» أو help، و«خروج» للخروج)\n")
+    crashes: list[float] = []
+    while True:
+        try:
+            text = input("أنت › ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not text:
+            continue
+        if text.lower() in EXIT:
+            print(f"{j.config['name']}: في أمان الله.")
+            break
+        try:
+            reply = j.handle(text)
+            print(f"{j.config['name']} [{reply.source}] › {reply.text}\n")
+        except Exception as exc:  # supervisor: keep the loop alive, heal, carry on
+            crashes = [t for t in crashes if time.time() - t < 60] + [time.time()]
+            j.healer.record("cli", exc)
+            j.healer.heal_all()
+            print(f"{j.config['name']}: حصل عطل غير متوقع ({exc}). تم تسجيله وإصلاح ما يمكن.\n")
+            if len(crashes) >= 5:
+                print("Too many crashes in one minute; stopping. See ~/.jarvis/logs/errors.log")
+                break
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="jarvis", description="Your personal self-learning, self-healing assistant")
+    p.add_argument("-c", "--command", help="send one message and print the reply")
+    p.add_argument("--doctor", action="store_true", help="print a health report")
+    p.add_argument("--heal", action="store_true", help="repair everything that can be repaired")
+    p.add_argument("--rollback", nargs="?", const="", metavar="SKILL", help="undo code repairs (optionally one skill)")
+    p.add_argument("--home", help="data folder (default ~/.jarvis or $JARVIS_HOME)")
+    args = p.parse_args(argv)
+
+    j = Jarvis(home=args.home)
+    try:
+        if args.doctor:
+            _print_checks(j)
+        elif args.heal:
+            notes = j.healer.heal_all()
+            for n in (j.startup_notes + notes) or ["nothing to repair"]:
+                print(f"  🔧 {n}")
+            _print_checks(j)
+        elif args.rollback is not None:
+            done = j.healer.rollback(args.rollback or None)
+            print("\n".join(done) if done else "no code backups to restore")
+        elif args.command:
+            print(j.handle(args.command).text)
+        else:
+            chat(j)
+    finally:
+        j.close()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
