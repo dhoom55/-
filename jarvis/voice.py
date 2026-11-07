@@ -35,6 +35,12 @@ class VoiceError(Exception):
     pass
 
 
+ARABIC_VOICE_HINT = ("Windows has no Arabic voice installed. Add one: Settings > Time & language > Speech > "
+                     "Add voices > Arabic (or connect to the internet for the natural online voice). / "
+                     "ويندوز ما فيه صوت عربي: الإعدادات ← الوقت واللغة ← الكلام ← إضافة أصوات ← العربية، "
+                     "أو اتصل بالإنترنت لاستخدام الصوت الطبيعي.")
+
+
 def clean_for_speech(text: str, limit: int = 700) -> str:
     """Remove code blocks, markdown, emoji and long paths so the voice reads naturally."""
     t = re.sub(r"```.*?```", " ", text, flags=re.S)
@@ -184,9 +190,13 @@ class Speaker:
         script = ("Add-Type -AssemblyName System.Speech; "
                   "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
                   f"$v = $s.GetInstalledVoices() | Where-Object {{ $_.Enabled -and $_.VoiceInfo.Culture.Name -like '{culture}' }} | Select-Object -First 1; "
-                  "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) }; "
+                  "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) } "
+                  + ("else { throw 'NO_ARABIC_VOICE' }; " if lang == "ar" else "; ") +
                   f"{out} $s.Speak((Get-Content -LiteralPath {_ps_quote(tmp)} -Raw -Encoding UTF8)); $s.Dispose()")
         try:
+            # Windows without an Arabic voice reads Arabic as silence, so that must count as a failure.
+            if lang == "ar" and not self._sapi_has_arabic():
+                raise VoiceError(ARABIC_VOICE_HINT)
             exe = shutil.which("powershell") or shutil.which("pwsh")
             if to_file:
                 _powershell(script)
@@ -194,6 +204,19 @@ class Speaker:
                 self._play([exe, "-NoProfile", "-NonInteractive", "-Command", script])
         finally:
             tmp.unlink(missing_ok=True)
+
+    _arabic_sapi: bool | None = None
+
+    def _sapi_has_arabic(self) -> bool:
+        if Speaker._arabic_sapi is None:
+            try:
+                out = _powershell("Add-Type -AssemblyName System.Speech; "
+                                  "(New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | "
+                                  "ForEach-Object { $_.VoiceInfo.Culture.Name }", timeout=30)
+                Speaker._arabic_sapi = any(line.strip().lower().startswith("ar") for line in out.splitlines())
+            except VoiceError:
+                Speaker._arabic_sapi = False
+        return Speaker._arabic_sapi
 
     def _speak_say(self, text, lang, to_file):
         args = ["say"]

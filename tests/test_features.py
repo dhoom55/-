@@ -79,6 +79,16 @@ class VoiceTests(Base):
             self.assertEqual(sp.speak("مرحبا"), "espeak")
         self.assertEqual(calls, ["edge", "espeak", "espeak"])   # edge skipped the 2nd time (cool-down)
 
+    def test_windows_without_arabic_voice_is_a_failure_not_silence(self):
+        j = self.make()
+        sp = Speaker(j.config)
+        with mock.patch.object(Speaker, "_sapi_has_arabic", return_value=False), \
+                mock.patch("jarvis.voice._powershell") as ps:
+            with self.assertRaises(VoiceError) as ctx:
+                sp._speak_sapi("مرحبا", "ar", None)
+        self.assertIn("Arabic voice", str(ctx.exception))
+        ps.assert_not_called()
+
     def test_all_engines_failing_raises_cleanly(self):
         j = self.make()
         with mock.patch.object(Speaker, "engines", return_value=[]):
