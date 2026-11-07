@@ -81,17 +81,17 @@ class OllamaSetup:
         self.j = jarvis
         self.url = (url or (jarvis.config["ollama_url"] if jarvis else "http://localhost:11434")).rstrip("/")
         self.notify = notify or (jarvis.notify if jarvis else print)
+        self.thread: threading.Thread | None = None
+        self.cancel = threading.Event()
+        self.stage = "idle"          # idle | installing | starting | downloading | done | failed | cancelled
+        self.progress = ""
+        self.error = ""
 
     def _say(self, text: str) -> None:
         try:
             self.notify(text)
         except Exception:   # a display problem must never stop the installation
             pass
-        self.thread: threading.Thread | None = None
-        self.cancel = threading.Event()
-        self.stage = "idle"          # idle | installing | starting | downloading | done | failed | cancelled
-        self.progress = ""
-        self.error = ""
 
     # ---- detection ---------------------------------------------------------
     @staticmethod
