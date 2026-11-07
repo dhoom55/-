@@ -12,6 +12,11 @@ from pathlib import Path
 HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 os.environ.setdefault("JARVIS_HOME", str(HERE / "data"))
+os.environ.setdefault("JARVIS_OUTPUTS", str(HERE / "ملفات جارفيس"))   # documents, presentations, code
+
+if len(sys.argv) >= 4 and sys.argv[1] == "--run-script":   # used by the coding feature
+    from jarvis.runner import run as run_script
+    raise SystemExit(run_script(sys.argv[2], sys.argv[3]))
 
 if "--selftest" in sys.argv:
     from jarvis.selftest import run

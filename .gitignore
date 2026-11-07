@@ -6,3 +6,6 @@ build/
 dist/
 *.spec
 data/
+
+# scratch output of the self-test
+selftest.txt

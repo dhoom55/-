@@ -39,6 +39,10 @@ ALLOWED_PACKAGES = {
     "dateutil": "python-dateutil",
     "pyttsx3": "pyttsx3",
     "speech_recognition": "SpeechRecognition",
+    "pyaudio": "PyAudio",
+    "edge_tts": "edge-tts",
+    "pptx": "python-pptx",
+    "docx": "python-docx",
 }
 
 
@@ -153,6 +157,8 @@ class SelfHealer:
         pkg = ALLOWED_PACKAGES.get(mod)
         if not pkg or not self.j.config["auto_install"]:
             return False, f"missing package {mod} (auto-install is off)"
+        if getattr(sys, "frozen", False):   # Jarvis.exe can't pip-install into itself
+            return False, f"missing package {pkg} in this build"
         r = subprocess.run([sys.executable, "-m", "pip", "install", "-q", pkg],
                            capture_output=True, text=True, timeout=300)
         importlib.invalidate_caches()

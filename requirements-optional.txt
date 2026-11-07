@@ -1,3 +1,8 @@
-# Jarvis runs with the Python standard library only.
-# Optional: enables the Claude brain (also needs ANTHROPIC_API_KEY).
-anthropic
+# Jarvis's core runs on the Python standard library only.
+# These add features (the self-healer installs missing ones on first use):
+anthropic          # Claude brain (also needs ANTHROPIC_API_KEY)
+python-pptx        # PowerPoint presentations
+python-docx        # Word documents
+edge-tts           # natural Arabic/English voices (needs internet)
+SpeechRecognition  # microphone input
+pyaudio            # microphone access for SpeechRecognition

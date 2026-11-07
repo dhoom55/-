@@ -167,6 +167,16 @@ class JarvisApp:
         self.send_btn = tk.Label(bar, text="  إرسال ➤  ", fg=BG, bg=CYAN, font=self.f_body, cursor="hand2", pady=9)
         self.send_btn.pack(side="left", padx=(8, 0))
         self.send_btn.bind("<Button-1>", lambda e: self.send())
+        # microphone: speak instead of typing
+        self.mic_btn = tk.Label(bar, text=" 🎤 ", fg=ICE, bg=INPUT_BG, font=self.f_body, cursor="hand2", pady=9,
+                                highlightbackground=CYAN_DIM, highlightthickness=1)
+        self.mic_btn.pack(side="left", padx=(8, 0))
+        self.mic_btn.bind("<Button-1>", lambda e: self.listen())
+        # speaker: read replies aloud (on/off)
+        self.spk_btn = tk.Label(bar, text=" 🔇 ", fg=MUTED, bg=INPUT_BG, font=self.f_body, cursor="hand2", pady=9,
+                                highlightbackground=CYAN_DIM, highlightthickness=1)
+        self.spk_btn.pack(side="left", padx=(8, 0))
+        self.spk_btn.bind("<Button-1>", lambda e: self.toggle_voice())
         wrap.pack(fill="both", expand=True, padx=2, pady=2)
         self.entry.focus_set()
 
@@ -220,6 +230,42 @@ class JarvisApp:
             except Exception as exc:  # handle() already heals; this is a last resort
                 self.results.put(("error", exc))
 
+    # ---- voice -------------------------------------------------------------
+    def _update_voice_button(self):
+        on = bool(self.jarvis and self.jarvis.config["speak_replies"])
+        self.spk_btn.configure(text=" 🔊 " if on else " 🔇 ", fg=CYAN if on else MUTED)
+
+    def toggle_voice(self):
+        if not self.jarvis:
+            return
+        on = not self.jarvis.config["speak_replies"]
+        self.jarvis.config.set("speak_replies", on)
+        if not on:
+            self.jarvis.voice.speaker.stop()
+        self._update_voice_button()
+        self.write_system("🔊 الرد بالصوت مفعّل" if on else "🔇 الرد بالصوت متوقف")
+
+    def listen(self):
+        if not self.jarvis or getattr(self, "_listening", False):
+            return
+        self._listening = True
+        self.mic_btn.configure(bg=BAD, fg=BG)
+        self.status_var.set("● أستمع…  listening")
+        self.status.configure(fg=BAD)
+        self.reactor.busy = True
+
+        def work():
+            try:
+                self.results.put(("heard", self.jarvis.voice.listener.listen()))
+            except Exception as exc:
+                self.results.put(("not_heard", exc))
+        threading.Thread(target=work, daemon=True).start()
+
+    def _speak_reply(self, text):
+        if self.jarvis and self.jarvis.config["speak_replies"]:
+            self.jarvis.voice.speaker.speak_async(
+                text, on_error=lambda e: self.results.put(("voice_error", e)))
+
     def _poll(self):
         try:
             while True:
@@ -230,11 +276,27 @@ class JarvisApp:
                     for note in value.startup_notes:
                         self.write_system(f"🔧 {note}")
                     title = value.config["user_title"]
-                    self.write("jarvis", f"مرحباً {title}. كل الأنظمة جاهزة، كيف أقدر أخدمك؟", "system")
+                    greeting = f"مرحباً {title}. كل الأنظمة جاهزة، كيف أقدر أخدمك؟"
+                    self.write("jarvis", greeting, "system")
+                    self._update_voice_button()
+                    self._speak_reply(greeting)
                     self._busy(False)
                 elif kind == "reply":
                     self.write("jarvis", value.text, value.source)
+                    self._update_voice_button()
+                    if value.source != "skill:voice_control":
+                        self._speak_reply(value.text)
                     self._busy(False)
+                elif kind in ("heard", "not_heard"):
+                    self._listening = False
+                    self.mic_btn.configure(bg=INPUT_BG, fg=ICE)
+                    self._busy(False)
+                    if kind == "heard":
+                        self.send(value)
+                    else:
+                        self.write_system(f"🎤 ما قدرت أسمعك: {value}")
+                elif kind == "voice_error":
+                    self.write_system(f"🔇 تعذّر النطق: {value}")
                 elif kind == "error":
                     self.write("jarvis", f"حصل عطل غير متوقع: {value}", "error")
                     self._busy(False)

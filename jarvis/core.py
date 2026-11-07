@@ -45,6 +45,7 @@ class Jarvis:
                                   healer=self.healer)
         self.skills = SkillManager(self)
         self.learner = Learner(self)
+        self._voice = None
         self.startup_notes = self.healer.startup()
 
     # ---- language helpers ------------------------------------------------
@@ -136,6 +137,14 @@ class Jarvis:
         else:
             history.append({"role": "user", "content": text})
         return history
+
+    @property
+    def voice(self):
+        """Speech in/out, created on first use."""
+        if self._voice is None:
+            from .voice import Voice
+            self._voice = Voice(self.config, self.healer)
+        return self._voice
 
     def close(self) -> None:
         try:

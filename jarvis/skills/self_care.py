@@ -21,6 +21,13 @@ HELP_AR = """أقدر أساعدك في:
   • الحساب: «احسب 15 * 4»
   • الملاحظات: «سجل ملاحظة ...» / «ملاحظاتي» / «خلصت ملاحظة 2»
   • حالة الجهاز: «حالة النظام»
+الصوت 🎤:
+  • زر الميكروفون للكلام، وزر السماعة للرد بالصوت   • «فعّل الصوت» / «اسكت»   • «قل ...»   • «اختبر الصوت»
+البرمجة 👨‍💻:
+  • «اكتب برنامج بايثون يحسب ...»   • «شغل الكود» (يصلح الأخطاء تلقائياً)   • «عدل الكود: ...»   • «وين الكود»
+المستندات 📊:
+  • «اعمل عرض تقديمي عن ...» (أو «... 8 شرائح»، أو «... : نقطة، نقطة»)
+  • «اكتب تقرير وورد عن ...»
 التعلم الذاتي:
   • «إذا سألتك ... قل ...»   • «تذكر أن ... هو ...»   • «اسمي ...»
   • «الجواب الصحيح هو ...» لتصحيحي   • «صح» لتأكيد جوابي   • «انسى ...»
@@ -34,6 +41,13 @@ HELP_EN = """I can help with:
   • Math: "calculate 15 * 4"
   • Notes: "note buy milk" / "my notes" / "done note 2"
   • System: "system status"
+Voice 🎤:
+  • mic button to talk, speaker button for spoken replies   • "voice on" / "mute"   • "say ..."   • "test voice"
+Coding 👨‍💻:
+  • "write a python script that ..."   • "run it" (auto-fixes errors)   • "modify the code: ..."   • "show the code"
+Documents 📊:
+  • "make a presentation about ..." (or "... 8 slides", or "...: point, point")
+  • "write a word document about ..."
 Self-learning:
   • "when I ask X say Y"   • "remember that X is Y"   • "my name is ..."
   • "the correct answer is ..." to correct me   • "correct" to confirm   • "forget ..."

@@ -63,12 +63,39 @@ def chat(j: Jarvis) -> None:
                 break
 
 
+def voice_chat(j: Jarvis) -> None:
+    """Hands-free: listen -> answer -> speak, until you say an exit word."""
+    print(j.voice.status())
+    print("🎤 تكلم… (قل «خروج» للإنهاء / say 'exit' to stop)\n")
+    while True:
+        try:
+            text = j.voice.listener.listen()
+        except KeyboardInterrupt:
+            break
+        except Exception as exc:
+            print(f"🎤 ما سمعتك: {exc}")
+            time.sleep(1)
+            continue
+        print(f"أنت › {text}")
+        if text.strip().lower() in EXIT:
+            j.voice.speaker.speak("في أمان الله")
+            break
+        reply = j.handle(text)
+        print(f"{j.config['name']} › {reply.text}\n")
+        try:
+            j.voice.speaker.speak(reply.text)
+        except Exception as exc:
+            print(f"🔇 {exc}")
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="jarvis", description="Your personal self-learning, self-healing assistant")
     p.add_argument("-c", "--command", help="send one message and print the reply")
     p.add_argument("--doctor", action="store_true", help="print a health report")
     p.add_argument("--heal", action="store_true", help="repair everything that can be repaired")
     p.add_argument("--rollback", nargs="?", const="", metavar="SKILL", help="undo code repairs (optionally one skill)")
+    p.add_argument("--voice", action="store_true", help="talk to Jarvis with your voice")
+    p.add_argument("--say", metavar="TEXT", help="speak a sentence aloud")
     p.add_argument("--home", help="data folder (default ~/.jarvis or $JARVIS_HOME)")
     args = p.parse_args(argv)
 
@@ -84,6 +111,10 @@ def main(argv: list[str] | None = None) -> int:
         elif args.rollback is not None:
             done = j.healer.rollback(args.rollback or None)
             print("\n".join(done) if done else "no code backups to restore")
+        elif args.say:
+            print(j.voice.speaker.speak(args.say))
+        elif args.voice:
+            voice_chat(j)
         elif args.command:
             print(j.handle(args.command).text)
         else:
