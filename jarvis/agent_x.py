@@ -461,7 +461,9 @@ def sandbox_test(code: str, timeout: float = 30) -> tuple[bool, str]:
         runner.write_text(SANDBOX, encoding="utf-8")
         if getattr(sys, "frozen", False):   # packaged app: no separate interpreter to call
             return _inprocess_test(cand)
-        cmd = [sys.executable, "-I", str(runner), str(cand)]
+        # -I isolates from env vars and user site-packages, which also makes it ignore PYTHONIOENCODING,
+        # so UTF-8 must come from -X utf8 (otherwise Windows prints Arabic as \uXXXX via cp1252).
+        cmd = [sys.executable, "-I", "-X", "utf8", str(runner), str(cand)]
         try:
             p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                timeout=timeout, cwd=tmp, env={**os.environ, "PYTHONIOENCODING": "utf-8"},
