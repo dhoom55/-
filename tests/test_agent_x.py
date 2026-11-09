@@ -46,8 +46,12 @@ class FakeGitHub(BaseHTTPRequestHandler):
         if url.path == "/search/repositories":
             q = urllib.parse.parse_qs(url.query)["q"][0]
             FakeGitHub.queries.append(q)
-            items = [{"full_name": f"demo/repo{i}", "html_url": f"https://github.com/demo/repo{i}",
-                      "stargazers_count": 1000 - i, "description": f"Demo repository {i} about {q}"} for i in range(3)]
+            topic = q.split(" in:")[0]
+            # a huge link-collection first (it would win on stars), then relevant repos
+            items = [{"full_name": "someone/awesome-everything", "html_url": "https://github.com/someone/awesome-everything",
+                      "stargazers_count": 300000, "description": "A curated list of everything"}]
+            items += [{"full_name": f"demo/repo{i}", "html_url": f"https://github.com/demo/repo{i}",
+                       "stargazers_count": 1000 - i, "description": f"Demo repository {i} about {topic}"} for i in range(3)]
             return self._send(json.dumps({"items": items}).encode())
         if url.path.endswith("/readme"):
             return self._send(README.encode(), "text/plain")
@@ -123,7 +127,8 @@ class AgentXTests(unittest.TestCase):
         r = j.agent_x.learn("solar energy")
         self.assertEqual(r["how"], "summary")
         self.assertEqual(len(r["sources"]), 3)
-        self.assertEqual(FakeGitHub.queries[0], "solar energy in:name,description,readme")
+        self.assertEqual(FakeGitHub.queries[0], "solar energy in:name,description")
+        self.assertNotIn("someone/awesome-everything", r["sources"])   # link lists are skipped
         answer = j.handle("what is solar energy").text
         self.assertIn("toolkit for planning", answer)                 # learned from the README
         self.assertIn("https://github.com/demo/repo0", answer)        # with sources
@@ -137,7 +142,7 @@ class AgentXTests(unittest.TestCase):
         j = self.make(llm)
         r = j.agent_x.learn("الطاقة الشمسية")
         self.assertEqual((r["how"], r["learned"]), ("ai", 2))
-        self.assertEqual(FakeGitHub.queries[0], "solar energy in:name,description,readme")  # Arabic -> English search
+        self.assertEqual(FakeGitHub.queries[0], "solar energy in:name,description")  # Arabic -> English search
         self.assertIn("Solar Kit", llm.prompts[-1])                  # the AI got the downloaded docs
         j.router.brains = [OfflineBrain(j.memory, j.config)]           # later, offline
         self.assertIn("اقسم استهلاكك", j.handle("كيف أحسب عدد الألواح").text)

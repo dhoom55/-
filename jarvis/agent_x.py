@@ -144,12 +144,36 @@ class AgentX:
                  if w not in {"what", "is", "the", "a", "an", "how", "to", "do", "does", "about", "learn", "of", "in"}]
         return " ".join(words[:6]) or topic
 
+    def find_repos(self, q: str, repos: int = 3) -> list[dict]:
+        """Most relevant repositories for a query. Searching names/descriptions by relevance first keeps
+        giant link-collection repos ("awesome-...", "public-apis") from winning just by stars."""
+        picked: list[dict] = []
+        for scope in ("in:name,description", "in:name,description,readme"):
+            data = json.loads(self._get("/search/repositories?" + urllib.parse.urlencode(
+                {"q": f"{q} {scope}", "per_page": 15})))            # default sort = best match
+            words = [w for w in re.findall(r"[a-z0-9+#]+", q.lower()) if len(w) > 2]
+            scored = []
+            for rank, item in enumerate(data.get("items", [])):
+                if is_list_repo(item):
+                    continue
+                text = f"{item['full_name']} {item.get('description') or ''}".lower()
+                hits = sum(w in text for w in words)
+                name_hits = sum(w in item["full_name"].lower() for w in words)
+                stars = item.get("stargazers_count", 0)
+                score = hits * 3 + name_hits * 2 + min(stars, 50000) / 25000 - rank * 0.15
+                scored.append((score, item))
+            scored.sort(key=lambda x: -x[0])
+            for _, item in scored:
+                if len(picked) < repos and item["full_name"] not in {p["full_name"] for p in picked}:
+                    picked.append(item)
+            if len(picked) >= repos:
+                break
+        return picked
+
     def research(self, topic: str, repos: int = 3) -> list[dict]:
         q = self.search_query(topic)
-        data = json.loads(self._get("/search/repositories?" + urllib.parse.urlencode(
-            {"q": f"{q} in:name,description,readme", "sort": "stars", "order": "desc", "per_page": repos})))
         sources = []
-        for item in data.get("items", [])[:repos]:
+        for item in self.find_repos(q, repos):
             full = item["full_name"]
             try:
                 text = self._get(f"/repos/{full}/readme", accept="application/vnd.github.raw").decode("utf-8", "replace")
@@ -325,6 +349,17 @@ class AgentX:
 
 
 # ---------------------------------------------------------------------- helpers
+LIST_REPO = re.compile(r"(^|[/_-])(awesome|public-apis|free-programming-books|cheatsheets?|interview|"
+                       r"roadmaps?|resources|collection|curated|list)([/_-]|$)", re.I)
+
+
+def is_list_repo(item: dict) -> bool:
+    """Link collections teach little about a specific topic."""
+    desc = (item.get("description") or "").lower()
+    return bool(LIST_REPO.search(item["full_name"])) or desc.startswith(("a curated list", "a collective list",
+                                                                         "a list of", "curated list"))
+
+
 def clean_markdown(text: str) -> str:
     t = re.sub(r"<!--.*?-->", " ", text, flags=re.S)
     t = re.sub(r"```.*?```", " ", t, flags=re.S)

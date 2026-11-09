@@ -45,7 +45,12 @@ def main(model: str) -> int:
     r = j.agent_x.learn("python http requests library")
     print(f"[agent x] {r}", flush=True)
     print(f"[agent x] {j.agent_x.describe(r)}", flush=True)
-    ax_ok = not r["error"] and len(r["sources"]) > 0 and r["learned"] > 0
+    # Quality, not just "something was saved": the actual library must be among the sources,
+    # and big link collections (awesome-*, public-apis) must not be.
+    relevant = any("requests" in src.lower() for src in r["sources"])
+    lists = [src for src in r["sources"] if "awesome" in src.lower() or "public-apis" in src.lower()]
+    print(f"[agent x] relevant source: {relevant}; link-list sources: {lists}", flush=True)
+    ax_ok = not r["error"] and r["learned"] > 0 and relevant and not lists
     j.router.brains = [b for b in j.router.brains if not b.is_llm]          # go offline
     after = j.handle("python http requests library")
     print(f"[agent x, offline afterwards] [{after.source}] {after.text[:300]}", flush=True)
