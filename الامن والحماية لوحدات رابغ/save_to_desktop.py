@@ -1,4 +1,4 @@
-"""Create the folder "الامن والحماية لوحدات رابغ" on the Desktop and copy the Word plan into it.
+"""Create the folder "الامن والحماية لوحدات رابغ" on the Desktop and copy the plan files (Word, PowerPoint, Excel) into it.
 
     python save_to_desktop.py          (or double-click "حفظ على سطح المكتب.bat" on Windows)
 
@@ -56,7 +56,7 @@ def open_folder(path: Path) -> None:
 def main(dest_root: Path | None = None, open_after: bool = True) -> Path:
     dest = (dest_root or desktop_dir()) / FOLDER
     dest.mkdir(parents=True, exist_ok=True)
-    for doc in sorted(HERE.glob("*.docx")):
+    for doc in sorted(p for ext in ("*.docx", "*.pptx", "*.xlsx") for p in HERE.glob(ext)):
         shutil.copy2(doc, dest / doc.name)
         print(f"تم الحفظ: {dest / doc.name}")
     if open_after:
