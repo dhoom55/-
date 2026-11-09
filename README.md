@@ -54,6 +54,29 @@ python -m unittest discover -s tests   # الاختبارات
 
 **مجرّب فعلياً:** في GitHub Actions، جارفيس يثبّت Ollama الحقيقي على Windows وmacOS وLinux، ويحمّل نموذجاً، ويجاوب منه.
 
+## 🕵️ Agent X: يتعلم بنفسه من GitHub
+
+Agent X يشتغل في الخلفية، ويسوي الخطوات هذي:
+1. يدوّر على الأسئلة اللي ما عرف جارفيس يجاوبها، أو المواضيع اللي تطلبها بقول «تعلم عن ...».
+2. يبحث عنها في GitHub ويحمّل وثائق أفضل المستودعات.
+3. يتعلم منها بالذكاء الاصطناعي، أو يحفظ ملخصاً مع المصادر إذا ما فيه ذكاء اصطناعي.
+4. يحفظ كل شيء في الذاكرة، فيصير جارفيس يجاوب عليه بعدين بدون إنترنت.
+
+وإذا كان الطلب «فعل» (مثل «حوّل 100 درجة مئوية»)، الذكاء الاصطناعي يكتب مهارة جديدة.
+
+**🛡️ الأمان:**
+- Agent X **يقرأ اللي يحمّله ولا يشغّله أبداً**.
+- المهارات اللي يكتبها تمر بفحص أمان: ممنوع حذف الملفات، وتشغيل الأوامر، وeval، وsubprocess.
+- ولازم تنجح اختباراتها في عملية معزولة قبل ما تتثبت.
+- ما يكتب فوق شيء علّمته أنت لجارفيس.
+- حده 10 مواضيع في اليوم.
+
+**الأوامر:** «تعلم عن ...» / «شغل ايجنت اكس» / «وقف ايجنت اكس» / «ايجنت اكس علم نفسك» / «تقرير ايجنت اكس».
+
+**الحدود والتشغيل:** إذا عرّفت متغير البيئة `GITHUB_TOKEN`، يصير حد GitHub أعلى. ويشتغل تلقائياً مع تطبيق سطح المكتب.
+
+**الخطة الكاملة:** [PLAN.md](PLAN.md).
+
 ## 🎤 الصوت
 
 - **في النافذة:** زر 🎤 تتكلم بدل ما تكتب، وزر 🔊 يخلي جارفيس يرد بالصوت.
@@ -189,6 +212,7 @@ Jarvis is a personal assistant in pure Python (stdlib only).
 - **Brains:** It tries Claude first (when the `anthropic` SDK and a key are present), then a local Ollama model, then a built-in offline brain that always works. Any brain that fails is skipped for a back-off period.
 - **Self-learning:** It learns from direct teaching, stored facts and your corrections. It also caches knowledge answers from the LLM brains so they keep working offline.
 - **Local AI auto-setup:** on first launch with no AI brain, Jarvis downloads, installs and starts Ollama on its own, pulls a qwen2.5 model sized to the machine's RAM, and switches to it. The healer restarts Ollama if it's stopped. CI verifies this end to end on real Windows, macOS and Linux.
+- **Agent X (self-teaching):** a background agent that turns unanswered questions and requested topics into GitHub research. It downloads READMEs (never runs downloaded code), digests them with the AI or keeps an extractive summary with sources, and stores Q&A in memory for offline use. For action requests it can write a new skill, which must pass an AST safety check and its own tests in an isolated process. Daily limit, optional `GITHUB_TOKEN`.
 - **Voice:**
   - Speaking uses natural edge-tts voices when online, otherwise the system's offline voice (SAPI, `say`, or espeak).
   - Listening uses Google speech recognition (Arabic) when online, otherwise Windows' offline dictation.

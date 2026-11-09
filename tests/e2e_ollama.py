@@ -41,6 +41,18 @@ def main(model: str) -> int:
     p = j.handle("make a presentation about the solar system 3 slides")
     print(f"[slides] {p.text}", flush=True)
 
+    # Agent X: learn a real topic from real GitHub with the real local AI (required)
+    r = j.agent_x.learn("python http requests library")
+    print(f"[agent x] {r}", flush=True)
+    print(f"[agent x] {j.agent_x.describe(r)}", flush=True)
+    ax_ok = not r["error"] and len(r["sources"]) > 0 and r["learned"] > 0
+    j.router.brains = [b for b in j.router.brains if not b.is_llm]          # go offline
+    after = j.handle("python http requests library")
+    print(f"[agent x, offline afterwards] [{after.source}] {after.text[:300]}", flush=True)
+    ax_ok = ax_ok and "I don't know" not in after.text
+    print("AGENT X PASSED" if ax_ok else "AGENT X FAILED", flush=True)
+    ok = ok and ax_ok
+
     j.close()
     print("E2E PASSED" if ok else "E2E FAILED", flush=True)
     return 0 if ok else 1

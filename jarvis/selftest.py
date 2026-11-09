@@ -59,6 +59,7 @@ def run(report_dir: Path) -> int:
                 check(f"reply to {msg!r}", expect in r.text, f"[{r.source}] {r.text[:80]!r}")
             _office(j, check)
             _coding(j, check)
+            _agent_x(check)
             _voice(j, info, Path(tmp))
             errs = j.memory.recent_errors(5)
             check("no internal errors", not [e for e in errs if not e["component"].startswith(("brain:", "voice"))],
@@ -104,6 +105,20 @@ def _coding(j, check):
         check("run a program", r.ok and "sum 45 4.0" in r.output, r.output[-200:])
     except Exception:
         check("run a program", False, traceback.format_exc()[-400:])
+
+
+def _agent_x(check):
+    """The safety check + sandbox Agent X uses before installing a skill it wrote."""
+    try:
+        from jarvis.agent_x import check_skill_safety, sandbox_test
+        good = ("NAME = 'x_echo'\nPATTERNS = [r'^echo (.+)']\nTESTS = ['echo hi']\n"
+                "def handle(text, match, jarvis):\n    return match.group(1)\n")
+        bad = good + "import subprocess\n"
+        ok, detail = sandbox_test(good)
+        check("Agent X skill sandbox", ok and check_skill_safety(good) is None
+              and "subprocess" in (check_skill_safety(bad) or ""), detail[-150:])
+    except Exception:
+        check("Agent X skill sandbox", False, traceback.format_exc()[-300:])
 
 
 def _voice(j, info, tmp: Path):

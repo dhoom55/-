@@ -77,6 +77,8 @@ jobs:
           python-version: "3.12"
       - run: pip install python-pptx python-docx
       - run: python tests/e2e_ollama.py qwen2.5:0.5b
+        env:
+          GITHUB_TOKEN: ${{ github.token }}   # Agent X: higher GitHub API limits
 
   release:
     # Every merge to main publishes downloadable files under "Releases".

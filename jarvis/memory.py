@@ -163,8 +163,8 @@ class Memory:
         norm = normalize(question)
         row = self.conn.execute("SELECT id FROM qa WHERE normalized=?", (norm,)).fetchone()
         if row:
-            # A taught answer always wins over one cached from an LLM.
-            if source == "llm":
+            # A taught answer always wins over one cached from an LLM or learned by Agent X.
+            if source != "taught":
                 existing = self.conn.execute("SELECT source FROM qa WHERE id=?", (row["id"],)).fetchone()
                 if existing["source"] == "taught":
                     return row["id"]
