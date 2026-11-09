@@ -231,6 +231,19 @@ class AgentXTests(unittest.TestCase):
         self.assertEqual(picked[0], "psf/requests")
         self.assertNotIn("sindresorhus/awesome", picked)
 
+    def test_language_becomes_a_filter_and_generic_words_are_dropped(self):
+        j = self.make()
+        seen = []
+        from unittest import mock
+
+        def fake_get(path, accept=None, timeout=20):
+            seen.append(urllib.parse.parse_qs(urllib.parse.urlparse(path).query)["q"][0])
+            return json.dumps({"items": []}).encode()
+        with mock.patch.object(AgentX, "_get", side_effect=fake_get):
+            j.agent_x.find_repos("python http requests library")
+        self.assertEqual(seen[0], "http requests language:python in:name,description")
+        self.assertNotIn("library", seen[0])
+
     def test_clean_markdown(self):
         t = clean_markdown(README)
         self.assertNotIn("img.shields", t)
