@@ -30,7 +30,9 @@ def free_port():
         return s.getsockname()[1]
 
 
-@unittest.skipIf(sys.platform == "win32", "uses a POSIX launcher script")
+POSIX_ONLY = unittest.skipIf(sys.platform == "win32", "fake Ollama install uses a POSIX launcher script")
+
+
 class OllamaSetupTests(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="jarvis-ai-"))
@@ -44,7 +46,8 @@ class OllamaSetupTests(unittest.TestCase):
     def tearDown(self):
         for j in self.jarvises:
             j.close()
-        subprocess.run(["pkill", "-f", f"{self.tmp}"], capture_output=True)
+        if sys.platform != "win32":
+            subprocess.run(["pkill", "-f", f"{self.tmp}"], capture_output=True)
         self.env.stop()
         shutil.rmtree(self.tmp, ignore_errors=True)
 
@@ -102,6 +105,7 @@ class OllamaSetupTests(unittest.TestCase):
         return mock.patch.multiple(ai_setup, URLS={"linux-amd64": base + "/old.tgz", "linux-arm64": base + "/old.tgz"},
                                    RELEASES_API=base + "/latest.json")
 
+    @POSIX_ONLY
     @unittest.skipUnless(sys.platform.startswith("linux"), "Linux installer path")
     def test_renamed_download_is_found_via_release_list(self):
         j = self.jarvis()
@@ -183,6 +187,7 @@ class OllamaSetupTests(unittest.TestCase):
         self.assertIn("❌", "\n".join(j.pending_notifications()))
         self.assertTrue(any(e["component"] == "ai_setup" for e in j.memory.recent_errors()))
 
+    @POSIX_ONLY
     def test_cancel(self):
         j = self.jarvis()
         j.ai_setup.cancel.set()

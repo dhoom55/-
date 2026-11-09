@@ -186,7 +186,7 @@ class AgentXTests(unittest.TestCase):
         r = j.agent_x.learn("convert celsius to fahrenheit")
         self.assertEqual(r["skill"], "x_convert_celsius_fahrenheit")
         path = j.config.plugins / "x_convert_celsius_fahrenheit.py"
-        self.assertIn("Written by Agent X", path.read_text())
+        self.assertIn("Written by Agent X", path.read_text(encoding="utf-8"))
         reply = j.handle("convert 100 c to fahrenheit")
         self.assertEqual((reply.source, reply.text), ("skill:x_temp", "100°C = 212°F"))
 
@@ -243,6 +243,14 @@ class AgentXTests(unittest.TestCase):
             j.agent_x.find_repos("python http requests library")
         self.assertEqual(seen[0], "http requests language:python in:name,description")
         self.assertNotIn("library", seen[0])
+
+    def test_sandbox_reports_arabic_failures_cleanly(self):
+        """On Windows the child process defaults to cp1252; Arabic in its output must not break the check."""
+        code = ("NAME = 'x_ar'\nPATTERNS = [r'^ترجم (.+)']\nTESTS = ['ترجم مرحبا']\n"
+                "def handle(text, match, jarvis):\n    raise ValueError('خطأ في الترجمة: ' + match.group(1))\n")
+        ok, detail = sandbox_test(code)
+        self.assertFalse(ok)
+        self.assertIn("خطأ في الترجمة", detail)
 
     def test_clean_markdown(self):
         t = clean_markdown(README)

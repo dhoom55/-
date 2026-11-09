@@ -463,7 +463,8 @@ def sandbox_test(code: str, timeout: float = 30) -> tuple[bool, str]:
             return _inprocess_test(cand)
         cmd = [sys.executable, "-I", str(runner), str(cand)]
         try:
-            p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=tmp,
+            p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               timeout=timeout, cwd=tmp, env={**os.environ, "PYTHONIOENCODING": "utf-8"},
                                creationflags=0x08000000 if sys.platform == "win32" else 0)
         except subprocess.TimeoutExpired:
             return False, "tests timed out"
