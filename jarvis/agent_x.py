@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import ast
 import json
+import math
 import os
 import re
 import subprocess
@@ -159,8 +160,11 @@ class AgentX:
                 text = f"{item['full_name']} {item.get('description') or ''}".lower()
                 hits = sum(w in text for w in words)
                 name_hits = sum(w in item["full_name"].lower() for w in words)
-                stars = item.get("stargazers_count", 0)
-                score = hits * 3 + name_hits * 2 + min(stars, 50000) / 25000 - rank * 0.15
+                stars = item.get("stargazers_count", 0) or 0
+                lang = (item.get("language") or "").lower()
+                lang_bonus = 4 if lang and lang in words else 0          # "python ..." -> Python repos
+                # relevance first, then popularity on a log scale (trusted projects), then GitHub's order
+                score = hits * 3 + name_hits * 2 + lang_bonus + 2 * math.log10(stars + 1) - rank * 0.15
                 scored.append((score, item))
             scored.sort(key=lambda x: -x[0])
             for _, item in scored:

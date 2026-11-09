@@ -212,6 +212,25 @@ class AgentXTests(unittest.TestCase):
         self.assertTrue(sandbox_test(ok)[0])
         self.assertFalse(sandbox_test(ok.replace("c * 9 / 5 + 32", "c / 0"))[0])
 
+    def test_ranks_the_real_library_first(self):
+        """Mirrors the real run: same-name libraries in other languages must not beat the Python one."""
+        items = [
+            {"full_name": "asmcos/requests", "description": "A golang http request library for humans",
+             "stargazers_count": 1100, "language": "Go"},
+            {"full_name": "ikod/dlang-requests", "description": "dlang http client library inspired by python-requests",
+             "stargazers_count": 160, "language": "D"},
+            {"full_name": "psf/requests", "description": "A simple, yet elegant, HTTP library.",
+             "stargazers_count": 52000, "language": "Python"},
+            {"full_name": "sindresorhus/awesome", "description": "Awesome lists about all kinds of interesting topics",
+             "stargazers_count": 380000, "language": None},
+        ]
+        j = self.make()
+        from unittest import mock
+        with mock.patch.object(AgentX, "_get", return_value=json.dumps({"items": items}).encode()):
+            picked = [i["full_name"] for i in j.agent_x.find_repos("python http requests library")]
+        self.assertEqual(picked[0], "psf/requests")
+        self.assertNotIn("sindresorhus/awesome", picked)
+
     def test_clean_markdown(self):
         t = clean_markdown(README)
         self.assertNotIn("img.shields", t)
