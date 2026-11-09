@@ -27,6 +27,8 @@ HELP_AR = """أقدر أساعدك في:
   • «اكتب برنامج بايثون يحسب ...»   • «شغل الكود» (يصلح الأخطاء تلقائياً)   • «عدل الكود: ...»   • «وين الكود»
 الذكاء الاصطناعي المحلي 🧠:
   • «فعّل الذكاء الاصطناعي» يثبّت Ollama ويشغّله تلقائياً   • «حالة الذكاء الاصطناعي»   • «الغ التثبيت»
+Agent X 🕵️ (يتعلم بنفسه من GitHub):
+  • «تعلم عن ...»   • «شغل ايجنت اكس» / «وقف ايجنت اكس»   • «ايجنت اكس علم نفسك»   • «تقرير ايجنت اكس»
 المستندات 📊:
   • «اعمل عرض تقديمي عن ...» (أو «... 8 شرائح»، أو «... : نقطة، نقطة»)
   • «اكتب تقرير وورد عن ...»
@@ -49,6 +51,8 @@ Coding 👨‍💻:
   • "write a python script that ..."   • "run it" (auto-fixes errors)   • "modify the code: ..."   • "show the code"
 Local AI 🧠:
   • "setup ai" installs and starts Ollama automatically   • "ai status"   • "cancel setup"
+Agent X 🕵️ (self-teaching from GitHub):
+  • "learn about ..."   • "start agent x" / "stop agent x"   • "agent x teach yourself"   • "agent x report"
 Documents 📊:
   • "make a presentation about ..." (or "... 8 slides", or "...: point, point")
   • "write a word document about ..."

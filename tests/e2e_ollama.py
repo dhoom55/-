@@ -41,6 +41,23 @@ def main(model: str) -> int:
     p = j.handle("make a presentation about the solar system 3 slides")
     print(f"[slides] {p.text}", flush=True)
 
+    # Agent X: learn a real topic from real GitHub with the real local AI (required)
+    r = j.agent_x.learn("python http requests library")
+    print(f"[agent x] {r}", flush=True)
+    print(f"[agent x] {j.agent_x.describe(r)}", flush=True)
+    # Quality, not just "something was saved": the actual library must be among the sources,
+    # and big link collections (awesome-*, public-apis) must not be.
+    relevant = "psf/requests" in r["sources"]          # the real Python library
+    lists = [src for src in r["sources"] if "awesome" in src.lower() or "public-apis" in src.lower()]
+    print(f"[agent x] relevant source: {relevant}; link-list sources: {lists}", flush=True)
+    ax_ok = not r["error"] and r["learned"] > 0 and relevant and not lists
+    j.router.brains = [b for b in j.router.brains if not b.is_llm]          # go offline
+    after = j.handle("python http requests library")
+    print(f"[agent x, offline afterwards] [{after.source}] {after.text[:300]}", flush=True)
+    ax_ok = ax_ok and "I don't know" not in after.text
+    print("AGENT X PASSED" if ax_ok else "AGENT X FAILED", flush=True)
+    ok = ok and ax_ok
+
     j.close()
     print("E2E PASSED" if ok else "E2E FAILED", flush=True)
     return 0 if ok else 1

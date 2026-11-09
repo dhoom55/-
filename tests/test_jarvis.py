@@ -217,10 +217,10 @@ class HealingTests(Base):
         j.handle("greet sam")                    # crash 1: logged
         r = j.handle("greet sam")                # crash 2: AI repair, tested, applied, retried
         self.assertEqual(r.text, "Hello sam")
-        self.assertIn("match.group(1)", path.read_text())
+        self.assertIn("match.group(1)", path.read_text(encoding="utf-8"))
         self.assertTrue(list((self.home / "backups" / "code").glob("greeter.*.py")))
         self.assertTrue(j.healer.rollback("greeter"))
-        self.assertIn("match.group(2)", path.read_text())
+        self.assertIn("match.group(2)", path.read_text(encoding="utf-8"))
 
     def test_bad_ai_fix_is_rejected(self):
         buggy = '''
@@ -230,11 +230,11 @@ class HealingTests(Base):
                 return str(1 / 0)
         '''
         path = self.plugin("div", buggy)
-        original = path.read_text()
+        original = path.read_text(encoding="utf-8")
         j = self.make(FakeLLM(fixed_code=textwrap.dedent(buggy)))   # "fix" that still crashes
         j.handle("divide")
         j.handle("divide")
-        self.assertEqual(path.read_text(), original)                 # untouched
+        self.assertEqual(path.read_text(encoding="utf-8"), original)                 # untouched
         self.assertIn("failed its tests", j.healer.last_note)
 
     def test_plugin_that_fails_to_load_does_not_break_startup(self):

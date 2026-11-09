@@ -26,6 +26,11 @@ DEFAULTS: dict = {
     "ollama_model": "qwen2.5:3b",
     "auto_setup_ai": True,         # desktop app: install + start Ollama by itself when no AI brain exists
     "ai_setup_attempted": 0,       # time of the last automatic attempt (retried after a day)
+    # Agent X - self-teaching from GitHub
+    "agent_x_auto": True,          # desktop app: start Agent X in the background
+    "agent_x_interval_hours": 3,   # how often it looks for new things to learn
+    "agent_x_daily_limit": 10,     # topics per day (keeps within GitHub's free API limits)
+    "agent_x_skills": True,        # may write new skills (safety-checked + tested) for action requests
     # Self-learning
     "learn_from_llm": True,        # cache LLM answers so they work offline later
     "recall_threshold": 0.82,      # how close a question must be to a learned one

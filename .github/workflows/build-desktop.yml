@@ -1,4 +1,6 @@
-name: Build desktop app
+name: Build Jarvis for Windows
+
+# Jarvis ships for Windows only: every job runs on a real Windows machine.
 
 on:
   push:
@@ -7,68 +9,44 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install feature libraries (PowerPoint, Word) and an offline voice
-        run: |
-          pip install python-pptx python-docx
-          sudo apt-get install -y -qq espeak-ng
+      - run: pip install python-pptx python-docx
       - run: python -m unittest discover -s tests -v
-      - name: Package for computers that have Python
-        run: python install_desktop.py --zip Jarvis-Desktop-Python.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Jarvis-Desktop-Python
-          path: Jarvis-Desktop-Python.zip
 
   build:
     needs: test
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: PortAudio for the microphone (macOS)
-        if: runner.os == 'macOS'
-        run: brew install portaudio
       - run: pip install pyinstaller -r requirements-optional.txt
       - run: python build_exe.py
-      - name: Self-test the built app (Windows)
-        if: runner.os == 'Windows'
+      - name: Self-test the built Jarvis.exe
         shell: pwsh
         run: |
           $p = Start-Process -FilePath dist/Jarvis/Jarvis.exe -ArgumentList '--selftest' -Wait -PassThru
           Get-Content dist/Jarvis/selftest.txt
           if ($p.ExitCode -ne 0) { exit 1 }
           Remove-Item dist/Jarvis/selftest.txt
-      - name: Self-test the built app (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          dist/Jarvis/Jarvis --selftest || (cat dist/Jarvis/selftest.txt; exit 1)
-          cat dist/Jarvis/selftest.txt && rm dist/Jarvis/selftest.txt
       - name: Zip
-        run: python -c "import shutil; shutil.make_archive('Jarvis-${{ runner.os }}', 'zip', 'dist', 'Jarvis')"
+        run: python -c "import shutil; shutil.make_archive('Jarvis-Windows', 'zip', 'dist', 'Jarvis')"
       - uses: actions/upload-artifact@v4
         with:
-          name: Jarvis-${{ runner.os }}
-          path: Jarvis-${{ runner.os }}.zip
+          name: Jarvis-Windows
+          path: Jarvis-Windows.zip
 
   local-ai:
-    # Real end-to-end: Jarvis installs Ollama by itself, downloads a model and answers with it.
+    # Real end-to-end on Windows: Jarvis installs Ollama by itself, downloads a model, answers with it,
+    # writes and runs code, makes a presentation, and Agent X learns from real GitHub.
     needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -77,11 +55,13 @@ jobs:
           python-version: "3.12"
       - run: pip install python-pptx python-docx
       - run: python tests/e2e_ollama.py qwen2.5:0.5b
+        env:
+          GITHUB_TOKEN: ${{ github.token }}   # Agent X: higher GitHub API limits
 
   release:
-    # Every merge to main publishes downloadable files under "Releases".
+    # Every merge to main publishes Jarvis-Windows.zip under "Releases" - only if everything passed.
     if: github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, local-ai]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -97,4 +77,4 @@ jobs:
           gh release create "v0.${{ github.run_number }}" --repo "${{ github.repository }}" \
             --title "جارفيس v0.${{ github.run_number }}" --latest \
             --notes-file .github/release-notes.md \
-            Jarvis-Windows.zip Jarvis-macOS.zip Jarvis-Desktop-Python.zip
+            Jarvis-Windows.zip

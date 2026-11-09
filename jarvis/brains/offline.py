@@ -65,6 +65,8 @@ class OfflineBrain(Brain):
 
         if ar:
             return ("للأسف ما أعرف الجواب بعد {title}، وأنا الآن أعمل بدون اتصال بذكاء خارجي. "
-                    "علّمني بقول: «إذا سألتك {q} قل ...» وراح أحفظها.").format(q=question.strip(), **fmt)
+                    "علّمني بقول: «إذا سألتك {q} قل ...» وراح أحفظها، "
+                    "أو قل «تعلم عن ...» وAgent X يتعلمها من GitHub.").format(q=question.strip(), **fmt)
         return (f"I don't know that yet, {fmt['title']}, and no external AI is reachable right now. "
-                f"Teach me with: \"when I ask {question.strip()} say ...\"")
+                f"Teach me with: \"when I ask {question.strip()} say ...\", "
+                f"or say \"learn about ...\" and Agent X will study it on GitHub.")

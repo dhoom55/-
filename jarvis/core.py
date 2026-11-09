@@ -48,6 +48,7 @@ class Jarvis:
         self.learner = Learner(self)
         self._voice = None
         self._ai_setup = None
+        self._agent_x = None
         self.notifications: "queue.Queue[str]" = queue.Queue()   # background news for the UI
         self.startup_notes = self.healer.startup()
 
@@ -163,6 +164,14 @@ class Jarvis:
             from .ai_setup import OllamaSetup
             self._ai_setup = OllamaSetup(self)
         return self._ai_setup
+
+    @property
+    def agent_x(self):
+        """Agent X: learns what Jarvis doesn't know yet from GitHub."""
+        if self._agent_x is None:
+            from .agent_x import AgentX
+            self._agent_x = AgentX(self)
+        return self._agent_x
 
     @property
     def voice(self):

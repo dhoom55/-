@@ -282,6 +282,8 @@ class JarvisApp:
                     self._speak_reply(greeting)
                     self._busy(False)
                     threading.Thread(target=self._auto_setup_ai, daemon=True).start()
+                    if value.config["agent_x_auto"]:
+                        value.agent_x.start()   # self-teaching from GitHub, in the background
                 elif kind == "reply":
                     self.write("jarvis", value.text, value.source)
                     self._update_voice_button()

@@ -160,7 +160,7 @@ class SelfHealer:
         if getattr(sys, "frozen", False):   # Jarvis.exe can't pip-install into itself
             return False, f"missing package {pkg} in this build"
         r = subprocess.run([sys.executable, "-m", "pip", "install", "-q", pkg],
-                           capture_output=True, text=True, timeout=300)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
         importlib.invalidate_caches()
         if r.returncode != 0:
             return False, f"pip install {pkg} failed: {r.stderr.strip()[-200:]}"
